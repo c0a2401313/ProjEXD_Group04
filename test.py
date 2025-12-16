@@ -51,6 +51,7 @@ class Chara(pygame.sprite.Sprite):
         レベルアップイベント
         """
         pass
+    
 
 """
 敵
