@@ -1,6 +1,5 @@
 import os
 import pygame
-import pyautogui
 import sys
 
 """
@@ -9,8 +8,6 @@ import sys
 #カレントディレクトリへの移動
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-#機器のサイズ
-W, H = pyautogui.size()
 #デフォルトGUIサイズ
 DEFAULT_SIZE: tuple[int, int] = (0, 0)
 
@@ -152,7 +149,9 @@ class Application():
         pygame.display.set_caption("目指せ！卒業")
         
         self.bg_img = pygame.image.load(f"images/back_ground.png")
-        self.bg_img = pygame.transform.scale(self.bg_img, (W, H))
+        w = self.screen.get_width()
+        h = self.screen.get_height()
+        self.bg_img = pygame.transform.scale(self.bg_img, (w, h))
                
         self.clock = pygame.time.Clock()
         self.running = True
