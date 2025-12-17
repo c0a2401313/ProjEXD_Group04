@@ -409,7 +409,195 @@ class Shield(pg.sprite.Sprite):
 
 # ===================== ここまで追加：Shieldクラス =====================
 
+"""
+武器に関するクラス
+"""
+class Bomb_Weapon(pg.sprite.Sprite):
+    """
+    ボム武器に関するクラス
+    爆弾を設置する
+    """
+    def __init__(self, bird: "Bird"):
+        """
+        初期化処理
+        引数：Birdインスタンス
+        """
+        super().__init__()
+        
+        self.image = pg.image.load("fig/bomb.png")
+        self.image = pg.transform.scale(self.image, (100, 100))
 
+        self.rect = self.image.get_rect()
+        self.rect.center = bird.rect.center
+
+        self.lv = 1
+        self.atk = 5
+        
+        self.cnt = 100
+    
+    def update(self, screen: pg.Surface):
+        """
+        描画処理
+        カウンタが0になるまで表示する
+        """
+        self.cnt -= 1
+        screen.blit(self.image, self.rect)
+        
+        if self.cnt == 0:
+            self.kill()
+
+class Laser_Weapon(pg.sprite.Sprite):
+    """
+    レーザー武器に関するクラス
+    レーザーを発射する
+    """
+    def __init__(self, bird: "Bird"):
+        super().__init__()
+        
+        self.vx, self.vy = bird.dire
+        angle = math.degrees(math.atan2(-self.vy, self.vx))
+
+        self.image = pg.transform.rotozoom(pg.image.load(f"fig/laser.png"), angle, 1.0)
+        self.image = pg.transform.scale(self.image, (200, 200))
+
+        self.vx = math.cos(math.radians(angle))
+        self.vy = -math.sin(math.radians(angle))
+
+        self.rect = self.image.get_rect()
+        self.rect.centery = bird.rect.centery + bird.rect.height * self.vy
+        self.rect.centerx = bird.rect.centerx + bird.rect.width * self.vx
+        self.speed = 10
+
+        self.lv = 1
+        self.atk = 1
+    
+    def update(self):
+        """
+        描画処理
+        画面外に行ったらオブジェクト削除
+        """
+        self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
+        if check_bound(self.rect) != (True, True):
+            self.kill()
+
+class Missile_Weapon(pg.sprite.Sprite):
+    """
+    追尾ミサイル武器に関するクラス
+    一番近い敵をターゲットに追尾し続ける
+    """
+    def __init__(self, bird: "Bird", emys: pg.sprite.Group):
+        super().__init__()
+        
+        self.target = None
+        min_dist = float("inf")
+        
+        for emy in emys:
+            dx = emy.rect.centerx - bird.rect.centerx
+            dy = emy.rect.centery - bird.rect.centery
+            
+            dist = math.sqrt(dx**2 + dy**2)
+            
+            if dist < min_dist:
+                min_dist = dist
+                self.target = emy
+        
+        if self.target is None:
+            self.kill()
+            return
+        else:
+            self.vx = self.target.rect.centerx - bird.rect.centerx
+            self.vy = self.target.rect.centery - bird.rect.centery
+
+        self.base_image = pg.image.load("fig/missile.png")
+        self.base_image = pg.transform.scale(self.base_image, (100, 50))
+
+        self.image = self.base_image
+        self.rect = self.image.get_rect()
+        self.rect.center = bird.rect.center
+
+        self.spd = 20
+        self.lv = 1
+        self.atk = 10
+    
+    def update(self):
+        if not (self.target and self.target.alive()):
+            self.kill()
+            return
+        
+        dx = self.target.rect.centerx - self.rect.centerx
+        dy = self.target.rect.centery - self.rect.centery
+        norm = math.sqrt(dx*dx + dy*dy)
+        if norm == 0:
+            return
+            
+        self.vx = dx / norm
+        self.vy = dy / norm
+        
+        angle = math.degrees(math.atan2(-self.vy, self.vx))
+        center = self.rect.center
+        self.image = pg.transform.rotozoom(self.base_image, angle, 1.0)
+        self.rect = self.image.get_rect(center=center)
+
+        self.rect.move_ip(self.spd * self.vx, self.spd * self.vy)
+
+class Gun_Weapon(pg.sprite.Sprite):
+    def __init__(self, bird: "Bird", space: int):
+        super().__init__()
+        
+        self.vx, self.vy = bird.dire
+        angle = math.degrees(math.atan2(-self.vy, self.vx))
+
+        self.image = pg.transform.rotozoom(pg.image.load(f"fig/bullet.png"), angle, 1.0)
+        self.image = pg.transform.scale(self.image, (20, 20))
+
+        self.vx = math.cos(math.radians(angle))
+        self.vy = -math.sin(math.radians(angle))
+
+        self.rect = self.image.get_rect()
+        self.rect.centery = bird.rect.centery + bird.rect.height * self.vy + space
+        self.rect.centerx = bird.rect.centerx + bird.rect.width * self.vx + space
+        self.speed = 10
+    
+    def update(self):
+        self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
+        if check_bound(self.rect) != (True, True):
+            self.kill()
+            
+class Sword_Wepon(pg.sprite.Sprite):
+    def __init__(self, bird: "Bird"):
+        super().__init__()
+        
+        self.target = bird
+        self.radius = 100 #半径
+        self.spd = 0.07
+        self.angle = 0.0
+                
+        self.base_image = pg.image.load("fig/sword.png")
+        self.base_image = pg.transform.scale(self.base_image, (100, 100))
+
+        self.image = self.base_image
+        self.rect = self.image.get_rect()
+        
+        self.lv = 1
+        self.atk = 5
+        
+    def update(self):
+        self.angle += self.spd
+        
+        cx, cy  = self.target.rect.center
+        
+        x = cx + self.radius * math.cos(self.angle)
+        y = cy + self.radius * math.sin(self.angle)
+
+        center = (x, y)
+        
+        dx = x - cx
+        dy = y - cy
+        image_angle = -math.degrees(math.atan2(dy, dx))
+
+        self.image = pg.transform.rotate(self.base_image, image_angle)
+        self.rect = self.image.get_rect(center=center)          
+        
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -420,6 +608,12 @@ def main():
     score = Score()
 
     bird = Bird(3, (900, 400))
+    bb_wep = pg.sprite.Group()
+    bb_effect = pg.sprite.Group()
+    lsr_wep = pg.sprite.Group()
+    mssl_wep = pg.sprite.Group()
+    gun_wep = pg.sprite.Group()
+    swrd_wep = pg.sprite.Group()
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
@@ -429,6 +623,10 @@ def main():
     emps = pg.sprite.Group()
 
     tmr = 0
+    laser_power = 100
+    sword_recast = 500
+    #剣武器追加
+    swrd_wep.add(Sword_Wepon(bird))
     clock = pg.time.Clock()
     while True:
         key_lst = pg.key.get_pressed()
@@ -459,8 +657,6 @@ def main():
                     score.value -= 200
 
 
-
-
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     beams.add(Beam(bird))
@@ -473,8 +669,52 @@ def main():
 
         screen.blit(bg_img, [0, 0])
 
-        if tmr % 200 == 0:  # 200フレームに1回，敵機を出現させる
+        if tmr % 20 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
+            
+        #武器処理
+        #爆弾クールダウン
+        if tmr % 150 == 0 and tmr != 0:
+            bb_wep.add(Bomb_Weapon(bird))
+        for bb in bb_wep:
+            if bb.cnt == 10:
+                bb_effect.add(Explosion(bb, 100)) #爆破
+        #レーザークールダウン
+        if tmr % 9 == 0:
+            laser_power -= 1
+            
+            if laser_power > 80:
+                lsr_wep.add(Laser_Weapon(bird)) #レーザー武器追加
+            elif laser_power == 0:
+                laser_power = 100
+        #ミサイルクールダウン
+        if tmr % 100 == 0:
+            mssl_wep.add(Missile_Weapon(bird, emys)) #ミサイル武器追加
+        #連続弾クールダウン
+        if tmr % 5 == 0:
+            #連続弾追加
+            gun_wep.add(Gun_Weapon(bird, 10))
+            gun_wep.add(Gun_Weapon(bird, -10))
+        #剣クールダウン
+        sword_recast -= 1
+        if sword_recast == 0:
+            swrd_wep.empty()
+        elif sword_recast == -500:
+            sword_recast = 500
+            swrd_wep.add(Sword_Wepon(bird))
+
+        #武器当たり判定クラス
+        for emy in pg.sprite.groupcollide(emys, bb_effect, True, False).keys():
+            exps.add(Explosion(emy, 100))
+        for emy in pg.sprite.groupcollide(emys, lsr_wep, True, False).keys():
+            exps.add(Explosion(emy, 100))
+        for emy in pg.sprite.groupcollide(emys, mssl_wep, True, True).keys():
+            exps.add(Explosion(emy, 100))
+        for emy in pg.sprite.groupcollide(emys, gun_wep, True, True).keys():
+            exps.add(Explosion(emy, 100))
+        for emy in pg.sprite.groupcollide(emys, swrd_wep, True, False).keys():
+            exps.add(Explosion(emy, 100))
+                                
 
         for emy in emys:
             if emy.state == "stop" and tmr % emy.interval == 0:
@@ -486,6 +726,10 @@ def main():
             score.value += 10  # 10点アップ
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
 
+        for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():  # ビームと衝突した爆弾リスト
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.value += 1  # 1点アップ
+            
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():  # ビームと衝突した爆弾リスト
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.value += 1  # 1点アップ
@@ -529,7 +773,18 @@ def main():
 
         gravity.update()
         gravity.draw(screen)
-        bird.update(key_lst, screen)
+        bird.update(key_lst, screen)        
+        bb_wep.update(screen)
+        bb_effect.update()
+        bb_effect.draw(screen)
+        lsr_wep.update()
+        lsr_wep.draw(screen)
+        mssl_wep.update()
+        mssl_wep.draw(screen)
+        gun_wep.update()
+        gun_wep.draw(screen)
+        swrd_wep.update()
+        swrd_wep.draw(screen)
         beams.update()
         beams.draw(screen)
         emys.update()
