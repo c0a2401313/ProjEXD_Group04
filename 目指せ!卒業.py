@@ -156,29 +156,43 @@ class Beam(pg.sprite.Sprite):
 class Gravity(pg.sprite.Sprite):
     """
     重力フィールドに関するクラス
+    発動時に画面を黒くし、決めセリフを表示する
     """
     def __init__(self, life: int):
         """
-        イベント用のサーフェイスの定義
         引数：持続時間の整数型
         """
         super().__init__()
         self.life = life
-
         self.alpha = 250
-        #イベント用サーフェイス
+        
+        # 1. ベースとなる黒い画面を作成
         self.image = pg.Surface((WIDTH, HEIGHT))
-        pg.draw.rect(self.image, (0,0,0), (0,0,WIDTH,HEIGHT))
         self.image.set_alpha(self.alpha)
-
         self.rect = self.image.get_rect()
+
+        # 2. 決めセリフの準備（追加箇所）
+        # フォントサイズ80, 赤色(255, 0, 0) で文字を作成
+        self.font = pg.font.Font(None, 100) 
+        self.text_img = self.font.render("Gravity Zero!", True, (255, 255, 255))
+        self.text_rect = self.text_img.get_rect()
+        self.text_rect.center = (WIDTH // 2, HEIGHT // 2)
 
     def update(self):
         """
-        時間処理
+        時間経過で透明度を上げ、徐々に明るくする
         """
         self.alpha -= 0.5
-        pg.draw.rect(self.image, (0,0,0), (0,0,WIDTH,HEIGHT))
+        if self.alpha < 0:
+            self.alpha = 0
+
+        # 1. 毎回画面を黒く塗りつぶす（前のフレームの絵を消す）
+        pg.draw.rect(self.image, (0, 0, 0), (0, 0, WIDTH, HEIGHT))
+        
+        # 2. 黒い画面の上に文字を重ねる（追加箇所）
+        self.image.blit(self.text_img, self.text_rect)
+
+        # 3. 透明度をセット（背景と文字、両方が薄くなる）
         self.image.set_alpha(self.alpha)
 
         self.life -= 1
@@ -230,6 +244,7 @@ class Explosion(pg.sprite.Sprite):
         if self.life < 0:
             self.kill()
 
+#スコアをデバック用にレベルとして代用
 class Score:
     """
     打ち落とした爆弾，敵機の数をスコアとして表示するクラス
@@ -239,7 +254,7 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
-        self.value = 10000
+        self.value = 13
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
@@ -346,15 +361,20 @@ class Enemy(pg.sprite.Sprite):
     Enemy の Docstring
     """
 
-    def __init__(self):
+    def __init__(self, lv):
         """
         Enemy の Docstring
         """
         super().__init__()
-        self.image = pg.transform.rotozoom(pg.image.load(f"fig/report.png"), 0, 0.1)
+        
+        wave = lv // 3
+        if lv >= 15:wave = 4
+        enemy_fid_dic = {0: "fig/report.png", 1: "fig/clock.png", 2: "fig/ai.png", 3: "fig/guard.png", 4: "fig/teacher.png"}
+        enemy_stats = [[100,100,100,2],[100,100,100,2],[100,100,100,2],[100,100,100,2],[100,100,100,2]]
+        self.image = pg.transform.rotozoom(pg.image.load(enemy_fid_dic[wave]), 0, 0.1)
         self.rect = self.image.get_rect()
         #HP,attack,defense,speed
-        self.stats = [100,100,100,2]
+        self.stats = enemy_stats[wave]
         if random.choice([True, False]):
             self.rect.centerx = random.choice([0, WIDTH])
             self.rect.centery = random.randint(0, HEIGHT)
@@ -373,6 +393,36 @@ class Enemy(pg.sprite.Sprite):
             velocity  = direction.normalize() * self.speed
             self.pos += velocity
         self.rect.center = self.pos
+
+class LastBoss(Enemy):
+    """
+    ラスボスに関するクラス
+    画面を埋め尽くす巨大な敵で、上から徐々に降りてくる
+    """
+    def __init__(self):
+        super().__init__(15)  # レベル設定（画像決定用、中身は何でも良い）
+        
+        # 画面を埋め尽くすサイズに画像を拡大 (元の画像を2倍にするなど)
+        original_img = pg.image.load(f"fig/fantasy_maou_devil.png")
+        self.image = pg.transform.rotozoom(original_img, 0, 2.5) 
+        
+        self.rect = self.image.get_rect()
+        self.rect.centerx = WIDTH / 2  # 横位置は画面中央
+        self.rect.bottom = 0           # 初期位置は画面の上外
+        
+        self.pos = pg.Vector2(self.rect.center)
+        self.speed = 1  # じりじりと襲ってくる（低速）
+
+    def update(self, bird_pos):
+        """
+        こうかとんの位置に関係なく、じりじりと下に降りてくる
+        """
+        self.pos.y += self.speed
+        self.rect.centery = int(self.pos.y)
+        
+        # 画面下まで来たら止まる（あるいはゲームオーバー判定など）
+        if self.rect.top > HEIGHT:
+            self.rect.top = HEIGHT  # とりあえず止める処理
 
 
 def main():
@@ -395,6 +445,7 @@ def main():
 
     tmr = 0
     clock = pg.time.Clock()
+    ending = False
     while True:
         key_lst = pg.key.get_pressed()
         for event in pg.event.get():
@@ -422,10 +473,6 @@ def main():
                 if score.value >= 200:
                     gravity.add(Gravity(400))
                     score.value -= 200
-
-
-
-
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     beams.add(Beam(bird))
@@ -438,12 +485,18 @@ def main():
 
         screen.blit(bg_img, [0, 0])
 
-        if tmr % 50 == 0:  # 200フレームに1回，敵機を出現させる
-            emys.add(Enemy())
-        for emy in pg.sprite.groupcollide(emys, beams, True, True).keys():  # ビームと衝突した敵機リスト
-            exps.add(Explosion(emy, 100))  # 爆発エフェクト
-            score.value += 10  # 10点アップ
-            bird.change_img(6, screen)  # こうかとん喜びエフェクト
+        if score.value >= 15 and not ending:
+            for enemy in emys:enemy.kill()
+            gravity.add(Gravity(400))
+            ending = True
+            emys.add(LastBoss())
+        
+        if tmr % 50 == 0 and not ending:  # 200フレームに1回，敵機を出現させる
+            emys.add(Enemy(score.value))
+
+        if tmr % 500 == 0:score.value += 1 #500フレームごとに50点加算
+
+
 
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():  # ビームと衝突した爆弾リスト
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
@@ -466,9 +519,6 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.value += 1  # 1点アップ
 
-        for emy in pg.sprite.groupcollide(emys, gravity, True, False).keys():  # 力場と衝突した敵機リスト
-            exps.add(Explosion(emy, 100))  # 爆発エフェクト
-            score.value += 10  # 10点アップ
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
 
         for bomb in pg.sprite.spritecollide(bird, bombs, True):  # こうかとんと衝突した爆弾リスト
