@@ -682,6 +682,20 @@ def main():
 
     bg_img = pg.image.load(f"fig/back_ground.png")
     bg_img = pg.transform.scale(bg_img, (width, height))
+
+    #武器権限時の効果音
+    bb_se = pg.mixer.Sound("sound/bb.wav")
+    bb_se.set_volume(0.4)
+    exp_se = pg.mixer.Sound("sound/bb_effct.wav")
+    exp_se.set_volume(0.2)
+    gun_se = pg.mixer.Sound("sound/gun.wav")
+    gun_se.set_volume(0.1)    
+    laser_se = pg.mixer.Sound("sound/laser.wav")
+    laser_se.set_volume(0.1)
+    mssl_se = pg.mixer.Sound("sound/mssle.wav")
+    mssl_se.set_volume(0.4)
+    swrd_se = pg.mixer.Sound("sound/sword.wav")
+    swrd_se.set_volume(1)    
     
     score = Score()
 
@@ -705,6 +719,8 @@ def main():
     sword_recast = 500 #剣の持続カウンタ
 
     swrd_wep.add(Sword_Wepon(bird)) #剣武器追加
+    swrd_se.play(-1)
+    
 
     clock = pg.time.Clock()
     while True:
@@ -755,9 +771,12 @@ def main():
         #爆弾クールダウン
         if tmr % 150 == 0 and tmr != 0:
             bb_wep.add(Bomb_Weapon(bird)) #演出用ボムを追加
+            bb_se.play()
         for bb in bb_wep:
             if bb.cnt == 1:
                 bb_effect.add(Explosion(bb, 100, True)) #攻撃判定エフェクトの追加
+
+                exp_se.play()
 
         #レーザークールダウン
         if tmr % 9 == 0:
@@ -765,12 +784,14 @@ def main():
             
             if laser_power > 80: #射出上限
                 lsr_wep.add(Laser_Weapon(bird)) #レーザー武器追加
+                laser_se.play()
             elif laser_power == 0:
                 laser_power = 100 #初期化
                 
         #ミサイルクールダウン
         if tmr % 100 == 0:
             mssl_wep.add(Missile_Weapon(bird, emys)) #ミサイル武器追加
+            mssl_se.play()
 
         #連続弾クールダウン
         if tmr % 5 == 0:
@@ -778,24 +799,33 @@ def main():
             gun_wep.add(Gun_Weapon(bird, 10))
             gun_wep.add(Gun_Weapon(bird, -10))
 
+            gun_se.play()
+
         #剣クールダウン
         sword_recast -= 1
         if sword_recast == 0:
             swrd_wep.empty() #すべての周回軌道武器を削除
+
+            swrd_se.stop()
         elif sword_recast == -500: #クールタイム
             #初期化
             sword_recast = 500
             swrd_wep.add(Sword_Wepon(bird)) #周回軌道武器の追加
+            swrd_se.play(-1)
 
         #ボム衝突イベント
         #敵との衝突
         for emy, bb_mine in pg.sprite.groupcollide(emys, bb_wep, False, True).items():
             for bb in bb_mine:
                 bb_effect.add(Explosion(bb, 100, True)) #即座に起爆
+
+                exp_se.play()
         #敵攻撃との衝突
         for bb_emy, bb_mine in pg.sprite.groupcollide(bombs, bb_wep, True, True).items():
             for bb in bb_mine:
                 bb_effect.add(Explosion(bb, 100, True)) #即座に起爆
+
+                exp_se.play()
         
         #敵×武器衝突イベント
         #ボム攻撃用エフェクトとの衝突
@@ -922,6 +952,7 @@ def main():
 
 if __name__ == "__main__":
     pg.init()
+    pg.mixer.init()
     main()
     pg.quit()
     sys.exit()
