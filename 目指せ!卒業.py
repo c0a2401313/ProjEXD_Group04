@@ -119,14 +119,6 @@ class Bird(pg.sprite.Sprite):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
 
-        #追加機能4:無敵状態
-        if self.state == "hyper":
-            self.hyper_life -= 1
-            self.image = pg.transform.laplacian(self.image)
-            if self.hyper_life < 0:
-                self.state = "normal"
-                self.image = self.imgs[self.dire]
-
         #ダメージエフェクト追加
         if self.dmg_eff_time > 0:
             self.dmg_eff_time -= 1
@@ -134,46 +126,6 @@ class Bird(pg.sprite.Sprite):
             self.image.fill((255, 0, 0, 255), special_flags=pg.BLEND_RGBA_MULT)
 
         screen.blit(self.image, self.rect)
-
-
-class Bomb(pg.sprite.Sprite):
-    """
-    爆弾に関するクラス
-    """
-    colors = [
-        (255, 0, 0), (0, 255, 0), (0, 0, 255),
-        (255, 255, 0), (255, 0, 255), (0, 255, 255)
-    ]
-
-    def __init__(self, emy: "Enemy", bird: Bird):
-        """
-        爆弾円Surfaceを生成する
-        引数1 emy：爆弾を投下する敵機
-        引数2 bird：攻撃対象のこうかとん
-        """
-        super().__init__()
-        self.state="active"
-        rad = random.randint(10, 50)  # 爆弾円の半径：10以上50以下の乱数
-        self.image = pg.Surface((2*rad, 2*rad))
-        color = random.choice(__class__.colors)  # 爆弾円の色：クラス変数からランダム選択
-        pg.draw.circle(self.image, color, (rad, rad), rad)
-        self.image.set_colorkey((0, 0, 0))
-        self.rect = self.image.get_rect()
-        # 爆弾を投下するemyから見た攻撃対象のbirdの方向を計算
-        self.vx, self.vy = calc_orientation(emy.rect, bird.rect)
-        self.rect.centerx = emy.rect.centerx
-        self.rect.centery = emy.rect.centery+emy.rect.height//2
-        self.speed = 6
-
-    def update(self):
-        """
-        爆弾を速度ベクトルself.vx, self.vyに基づき移動させる
-        引数 screen：画面Surface
-        """
-        self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
-        if check_bound(self.rect) != (True, True):
-            self.kill()
-
 
 class Beam(pg.sprite.Sprite):
     """
@@ -212,29 +164,43 @@ class Beam(pg.sprite.Sprite):
 class Gravity(pg.sprite.Sprite):
     """
     重力フィールドに関するクラス
+    発動時に画面を黒くし、決めセリフを表示する
     """
     def __init__(self, life: int):
         """
-        イベント用のサーフェイスの定義
         引数：持続時間の整数型
         """
         super().__init__()
         self.life = life
-
         self.alpha = 250
-        #イベント用サーフェイス
+        
+        # 1. ベースとなる黒い画面を作成
         self.image = pg.Surface((WIDTH, HEIGHT))
-        pg.draw.rect(self.image, (0,0,0), (0,0,WIDTH,HEIGHT))
         self.image.set_alpha(self.alpha)
-
         self.rect = self.image.get_rect()
+
+        # 2. 決めセリフの準備（追加箇所）
+        # フォントサイズ80, 赤色(255, 0, 0) で文字を作成
+        self.font = pg.font.Font(None, 100) 
+        self.text_img = self.font.render("Gravity Zero!", True, (255, 255, 255))
+        self.text_rect = self.text_img.get_rect()
+        self.text_rect.center = (WIDTH // 2, HEIGHT // 2)
 
     def update(self):
         """
-        時間処理
+        時間経過で透明度を上げ、徐々に明るくする
         """
         self.alpha -= 0.5
-        pg.draw.rect(self.image, (0,0,0), (0,0,WIDTH,HEIGHT))
+        if self.alpha < 0:
+            self.alpha = 0
+
+        # 1. 毎回画面を黒く塗りつぶす（前のフレームの絵を消す）
+        pg.draw.rect(self.image, (0, 0, 0), (0, 0, WIDTH, HEIGHT))
+        
+        # 2. 黒い画面の上に文字を重ねる（追加箇所）
+        self.image.blit(self.text_img, self.text_rect)
+
+        # 3. 透明度をセット（背景と文字、両方が薄くなる）
         self.image.set_alpha(self.alpha)
 
         self.life -= 1
@@ -289,39 +255,6 @@ class Explosion(pg.sprite.Sprite):
         if self.life < 0:
             self.kill()
 
-
-class Enemy(pg.sprite.Sprite):
-    """
-    Enemy の Docstring
-    """
-
-    def __init__(self):
-        """
-        Enemy の Docstring
-        """
-        super().__init__()
-        self.image = pg.transform.rotozoom(pg.image.load(f"fig/image.png"), 0, 0.1)
-        self.rect = self.image.get_rect()
-        #HP,attack,defense,speed
-        self.stats = [100,100,100,2]
-        if random.choice([True, False]):
-            self.rect.centerx = random.choice([0, WIDTH])
-            self.rect.centery = random.randint(0, HEIGHT)
-        else:
-            self.rect.centerx = random.randint(0, WIDTH)
-            self.rect.centery = random.choice([0, HEIGHT])
-
-        self.pos = pg.Vector2(self.rect.center)
-        self.speed = self.stats[3]
-
-    def update(self, bird_pos):
-        target_vector = pg.math.Vector2(bird_pos)
-        direction = target_vector - self.pos
-
-        if direction.length() != 0:
-            velocity  = direction.normalize() * self.speed
-            self.pos += velocity
-        self.rect.center = self.pos
 class Hpbar:
     """
     HPバーとレベルを表示する
@@ -363,7 +296,7 @@ class Score:
         self.font = pg.font.Font(None, 36)
         self.color = (255, 255, 255)
         self.shadow_color = (0, 0, 0)
-        self.value = 10
+        self.value = 100
         # テキスト位置
         self.text_posision = (20, 20)
         # ゲージ位置とサイズ
@@ -846,6 +779,76 @@ class Sword_Wepon(pg.sprite.Sprite):
         self.image = pg.transform.rotate(self.base_image, image_angle)
         self.rect = self.image.get_rect(center=center)          
         
+class Enemy(pg.sprite.Sprite):
+    """
+    Enemy の Docstring
+    """
+
+    def __init__(self, lv):
+        """
+        Enemy の Docstring
+        """
+        super().__init__()
+        
+        wave = lv // 3
+        if lv >= 15:wave = 4
+        enemy_fid_dic = {0: "fig/report.png", 1: "fig/clock.png", 2: "fig/ai.png", 3: "fig/guard.png", 4: "fig/teacher.png"}
+        enemy_stats = [[100,100,100,2],[100,100,100,2],[100,100,100,2],[100,100,100,2],[100,100,100,2]]
+        self.image = pg.transform.rotozoom(pg.image.load(enemy_fid_dic[wave]), 0, 0.1)
+        self.rect = self.image.get_rect()
+        #HP,attack,defense,speed
+        self.stats = enemy_stats[int(wave)]
+        if random.choice([True, False]):
+            self.rect.centerx = random.choice([0, WIDTH])
+            self.rect.centery = random.randint(0, HEIGHT)
+        else:
+            self.rect.centerx = random.randint(0, WIDTH)
+            self.rect.centery = random.choice([0, HEIGHT])
+
+        self.pos = pg.Vector2(self.rect.center)
+        self.speed = self.stats[3]
+
+    def update(self, bird_pos):
+        target_vector = pg.math.Vector2(bird_pos)
+        direction = target_vector - self.pos
+
+        if direction.length() != 0:
+            velocity  = direction.normalize() * self.speed
+            self.pos += velocity
+        self.rect.center = self.pos
+
+class LastBoss(Enemy):
+    """
+    ラスボスに関するクラス
+    画面を埋め尽くす巨大な敵で、上から徐々に降りてくる
+    """
+    def __init__(self):
+        super().__init__(15)  # レベル設定（画像決定用、中身は何でも良い）
+        
+        # 画面を埋め尽くすサイズに画像を拡大 (元の画像を2倍にするなど)
+        original_img = pg.image.load(f"fig/fantasy_maou_devil.png")
+        self.image = pg.transform.rotozoom(original_img, 0, 2.5) 
+        self.stats = [10000000000, 50, 20, 1]  # HP, attack, defense, speed
+        
+        self.rect = self.image.get_rect()
+        self.rect.centerx = WIDTH / 2  # 横位置は画面中央
+        self.rect.bottom = 0           # 初期位置は画面の上外
+        
+        self.pos = pg.Vector2(self.rect.center)
+        self.speed = 1  # じりじりと襲ってくる（低速）
+
+    def update(self, bird_pos):
+        """
+        こうかとんの位置に関係なく、じりじりと下に降りてくる
+        """
+        self.pos.y += self.speed
+        self.rect.centery = int(self.pos.y)
+        
+        # 画面下まで来たら止まる（あるいはゲームオーバー判定など）
+        if self.rect.top > HEIGHT:
+            self.rect.top = HEIGHT  # とりあえず止める処理
+
+
 def main():
     global width, height
     pg.display.set_caption("真！こうかとん無双")
@@ -899,8 +902,10 @@ def main():
     swrd_wep.add(Sword_Wepon(bird)) #剣武器追加
     swrd_se.play(-1)
     
+    flag = False
 
     clock = pg.time.Clock()
+    ending = False
     while True:
         key_lst = pg.key.get_pressed()
         for event in pg.event.get():
@@ -940,7 +945,6 @@ def main():
                 if score.value >= 200:
                     gravity.add(Gravity(400))
                     score.value -= 200
-
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     beams.add(Beam(bird))
@@ -959,11 +963,11 @@ def main():
             clock.tick(50)
             continue
 
-        if tmr % 200 == 0:  # 200フレームに1回，敵機を出現させる
-            emys.add(Enemy())
+        #if tmr % 200 == 0 and not ending:  # 200フレームに1回，敵機を出現させる
+         #   emys.add(Enemy(score.value / 10))
 
-        if tmr % 20 == 0:  # 200フレームに1回，敵機を出現させる
-            emys.add(Enemy())
+        if tmr % 20 == 0 and not ending:  # 200フレームに1回，敵機を出現させる
+            emys.add(Enemy(score.value / 10))
             
         #武器処理
         #爆弾クールダウン
@@ -1026,51 +1030,53 @@ def main():
                 exp_se.play()
         
         #敵×武器衝突イベント
-        #ボム攻撃用エフェクトとの衝突
-        for emy in pg.sprite.groupcollide(emys, bb_effect, True, False).keys():
-            exps.add(Explosion(emy, 100))
-            score.value += 1
-        #レーザー武器との衝突
-        for emy in pg.sprite.groupcollide(emys, lsr_wep, True, False).keys():
-            exps.add(Explosion(emy, 100))
-            score.value += 1
-        #追尾ミサイルとの衝突
-        for emy in pg.sprite.groupcollide(emys, mssl_wep, True, True).keys():
-            exps.add(Explosion(emy, 100))
-            score.value += 1
-        #連続弾との衝突
-        for emy in pg.sprite.groupcollide(emys, gun_wep, True, True).keys():
-            exps.add(Explosion(emy, 100))
-            score.value += 1
-        #周回軌道武器との衝突
-        for emy in pg.sprite.groupcollide(emys, swrd_wep, True, False).keys():
-            exps.add(Explosion(emy, 100))
-            score.value += 1
-
-        #敵攻撃×武器衝突イベント
-        #ボム攻撃用エフェクトとの衝突
-        for bb in pg.sprite.groupcollide(bombs, bb_effect, True, False).keys():
-            exps.add(Explosion(bb, 100))
-        #レーザー武器との衝突
-        for bb in pg.sprite.groupcollide(bombs, lsr_wep, True, False).keys():
-            exps.add(Explosion(bb, 100))
-        #追尾ミサイルとの衝突
-        for bb in pg.sprite.groupcollide(bombs, mssl_wep, True, True).keys():
-            exps.add(Explosion(bb, 100))
-        #連続弾との衝突
-        for bb in pg.sprite.groupcollide(bombs, gun_wep, True, True).keys():
-            exps.add(Explosion(bb, 100))
-        #周回軌道武器との衝突
-        for bb in pg.sprite.groupcollide(bombs, swrd_wep, True, False).keys():
-            exps.add(Explosion(bb, 100))
-                                
-
-
+        if not ending:
+            #ボム攻撃用エフェクトとの衝突
+            for emy in pg.sprite.groupcollide(emys, bb_effect, True, False).keys():
+                exps.add(Explosion(emy, 100))
+                score.value += 1
+            #レーザー武器との衝突
+            for emy in pg.sprite.groupcollide(emys, lsr_wep, True, False).keys():
+                exps.add(Explosion(emy, 100))
+                score.value += 1
+            #追尾ミサイルとの衝突
+            for emy in pg.sprite.groupcollide(emys, mssl_wep, True, True).keys():
+                exps.add(Explosion(emy, 100))
+                score.value += 1
+            #連続弾との衝突
+            for emy in pg.sprite.groupcollide(emys, gun_wep, True, True).keys():
+                exps.add(Explosion(emy, 100))
+                score.value += 1
+            #周回軌道武器との衝突
+            for emy in pg.sprite.groupcollide(emys, swrd_wep, True, False).keys():
+                exps.add(Explosion(emy, 100))
+                score.value += 1                              
 
         for emy in pg.sprite.groupcollide(emys, beams, True, True).keys():  # ビームと衝突した敵機リスト
             exps.add(Explosion(emy, 100))  # 爆発エフェクト
             
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
+        if score.value >= 150 and not ending:
+            if flag == False:
+                emys.empty()
+                
+                bb_wep.empty()
+                gun_wep.empty()
+                lsr_wep.empty()
+                mssl_wep.empty()
+                swrd_wep.empty()
+
+                flag = True
+            gravity.add(Gravity(400))
+            ending = True
+            emys.add(LastBoss())
+        
+        if tmr % 50 == 0 and not ending:  # 200フレームに1回，敵機を出現させる
+            emys.add(Enemy(score.value / 10))
+
+        if tmr % 500 == 0:score.value += 1 #500フレームごとに50点加算
+
+
 
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():  # ビームと衝突した爆弾リスト
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
@@ -1090,29 +1096,38 @@ def main():
         for bomb in pg.sprite.groupcollide(bombs, gravity, True, False).keys():  # 力場と衝突した爆弾リスト
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             
-        for emy in pg.sprite.groupcollide(emys, gravity, True, False).keys():  # 力場と衝突した敵機リスト
-            exps.add(Explosion(emy, 100))  # 爆発エフェクト
-            
+            score.value += 1  # 1点アップ
+
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
 
-        for emy in pg.sprite.spritecollide(bird, emys, True):  # こうかとんと衝突した爆弾リスト
-            if bird.state == "hyper":
-                exps.add(Explosion(emy, 50))  # 爆発エフェクト
+        if not ending:
+            for emy in pg.sprite.spritecollide(bird, emys, True):  # こうかとんと衝突した爆弾リスト
+                if bird.state == "hyper":
+                    exps.add(Explosion(emy, 50))  # 爆発エフェクト
                 
-            else: #敵と衝突したら？
+                else: #敵と衝突したら？
+                    bird.hp-=1 #HPが減る
+                    emy.kill()
+                    bird.dmg_eff_time = 50
+                if bird.dmg_eff_time and bird.dmg_sound is not None:
+                    bird.dmg_sound.play()
+        else:
+            for emy in pg.sprite.spritecollide(bird, emys, False):  # こうかとんと衝突した爆弾リスト
+                #敵と衝突したら？
                 bird.hp-=1 #HPが減る
-                emy.kill()
                 bird.dmg_eff_time = 50
                 if bird.dmg_eff_time and bird.dmg_sound is not None:
                     bird.dmg_sound.play()
+
                 
-                if bird.hp<=0:
-                    #ゲームオーバー
-                    bird.change_img(8, screen)  # こうかとん悲しみエフェクト
-                    hpbar.update(screen)
-                    pg.display.update()
-                    time.sleep(2)
-                    return
+        if bird.hp<=0:
+            #ゲームオーバー
+            bird.change_img(8, screen)  # こうかとん悲しみエフェクト
+            hpbar.update(screen)
+            pg.display.update()
+            time.sleep(2)
+            return
+
 
         score.update(screen)
         gravity.update()
