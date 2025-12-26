@@ -21,7 +21,7 @@
 
 ## ゲームの遊び方
 * 敵を倒して経験値（スコア）を集め、レベルアップしていく
-* `{w,a,s,d}` または `{↑,←,↓,→}` キーで移動できる
+* `{↑,←,↓,→}` キーで移動できる
 * Waveをすべてクリアするとラスボスが出る
 
 ---
@@ -173,7 +173,7 @@
 * `sound/laser.wav`
 * `sound/mssle.wav`
 * `sound/sword.wav`
-* （任意）`fig/damage.mp3`（存在しない場合は無効化される）
+* `sound/damage.wav`
 
 ---
 
@@ -181,6 +181,6 @@
 
 ```bash
 pip install pygame
-python <ゲームファイル名>.py
+python 目指せ!卒業.py
 
 
