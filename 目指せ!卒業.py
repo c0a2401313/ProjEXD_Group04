@@ -1211,13 +1211,8 @@ def main():
         #最終フェーズではないとき
         if not ending: 
             for emy in pg.sprite.spritecollide(bird, emys, True):  # こうかとんと衝突した爆弾リスト
-                if bird.state == "hyper":
-                    exps.add(Explosion(emy, 50))  # 爆発エフェクト
-
-                else: #敵と衝突したら？
-                    bird.hp-=1 #HPが減る
-                    emy.kill()
-                    bird.dmg_eff_time = 50
+                bird.hp-=1 #HPが減る
+                bird.dmg_eff_time = 50
                 if bird.dmg_eff_time and bird.dmg_sound is not None:
                     bird.dmg_sound.play()
         else:
