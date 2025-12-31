@@ -92,6 +92,7 @@
 
 ### HPバー
 <img width="233" height="101" alt="HPBAR" src="https://github.com/user-attachments/assets/89bac06d-36f2-4fdf-ac3e-f30b1516d82c" />
+
 * 緑の部分が残りのHP。ダメージ受けると赤い部分が増える。
 
 ## 武器の実装（5種）
@@ -189,6 +190,7 @@
 ```bash
 pip install pygame
 python 目指せ!卒業.py
+
 
 
 
