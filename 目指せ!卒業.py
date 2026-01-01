@@ -1153,19 +1153,18 @@ class Weapon_select:
         if current_item is None:
             return
 
-        # アイテムのレベルが4未満なら上げる（4到達で選択肢から外す）
+        # アイテムのレベルが5未満なら上げる（5到達で選択肢から外す）
         cur_level = int(current_item.get("level", 1))
-        if cur_level < 4:
+        if cur_level < 5:
             new_level = cur_level + 1
             # Weapon_Control のレベルも同期
             self._sync_weapon_control_level(weapon_index, new_level)
 
-            # Bird のアイテムスロットを更新（表示用に一時更新してから、
-            # レベル4到達なら選択肢から外すために clear_item を呼ぶ）
+            # Bird のアイテムスロットを更新
             self.bird.set_item(slot, current_item.get("name", ""), current_item.get("attack", 0), new_level)
 
-            # レベルが4に到達したら、選択画面から外す（slotをクリア）
-            if new_level == 4:
+            # レベルが5に到達したら、選択画面から外す（slotをクリア）
+            if new_level == 5:
                 self.bird.clear_item(slot)
     
     def _sync_weapon_control_level(self, weapon_index: int, new_level: int) -> None:
