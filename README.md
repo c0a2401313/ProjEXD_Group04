@@ -82,10 +82,18 @@
 ---
 
 ## 主人公
-
+こうかとん
 <img width="48" height="48" alt="Image" src="https://github.com/user-attachments/assets/d15d8d34-8f3b-4e22-9de3-13efd168bba8" />
 
----
+* 矢印(↑↓→←)で操作する。武器の攻撃を敵に当てて倒し、レベルアップしながら、最後まで生き残ることを目指す。
+* こうかとんのHPは10で、向かってくる敵と衝突するとダメージを食らい、ダメージ音とともに赤いエフェクトが出る。
+* HPが0になるとゲームオーバー。
+* 武器のスロットは５つあり、レベルが上がると武器が強くなる。
+
+### HPバー
+<img width="233" height="101" alt="HPBAR" src="https://github.com/user-attachments/assets/89bac06d-36f2-4fdf-ac3e-f30b1516d82c" />
+
+* 緑の部分が残りのHP。ダメージ受けると赤い部分が増える。
 
 ## 武器の実装（5種）
 
@@ -182,5 +190,8 @@
 ```bash
 pip install pygame
 python 目指せ!卒業.py
+
+
+
 
 

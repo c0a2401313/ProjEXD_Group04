@@ -470,7 +470,7 @@ class LevelUpSelector:
         title_y = height // 4
         screen.blit(title_surf, (title_x, title_y))
 
-        # 武器選択肢の表示（レベル4に達した武器は表示しない）
+        # 武器選択肢の表示（レベル5に達した武器は表示しない）
         start_y = height // 2
         display_index = 0
         for i, weapon in enumerate(self.weapons):
@@ -1387,13 +1387,8 @@ def main():
         #最終フェーズではないとき
         if not ending: 
             for emy in pg.sprite.spritecollide(bird, emys, True):  # こうかとんと衝突した爆弾リスト
-                if bird.state == "hyper":
-                    exps.add(Explosion(emy, 50))  # 爆発エフェクト
-
-                else: #敵と衝突したら？
-                    bird.hp-=1 #HPが減る
-                    emy.kill()
-                    bird.dmg_eff_time = 50
+                bird.hp-=1 #HPが減る
+                bird.dmg_eff_time = 50
                 if bird.dmg_eff_time and bird.dmg_sound is not None:
                     bird.dmg_sound.play()
         else:
