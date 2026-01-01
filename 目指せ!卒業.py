@@ -76,7 +76,7 @@ class Bird(pg.sprite.Sprite):
 
         # 互換用：既存コードの item1〜item5 を残す（中身は _items と同期）
         self.dmg_eff_time = 0 #ダメージエフェクトのフレーム管理用
-        self.hp=10
+        self.hp = 10
         
         self.item1 = None #武器ランダム
         self.item2 = None
@@ -144,15 +144,6 @@ class Bird(pg.sprite.Sprite):
         """
         self.item1, self.item2, self.item3, self.item4, self.item5 = self._items
 
-    # =========================
-    # 互換：元の関数名を「ちゃんと動く形」にして残す（外部コードが呼んでもOK）
-    # =========================
-    def item_set_(self, item, attack, level):
-        """
-        機能：互換API
-        - 旧仕様の item_set_ を「スロット1にセット」として扱う
-        """
-        self.set_item(1, str(item), attack, level)
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -301,6 +292,7 @@ class Score:
         self.color = (255, 255, 255)
         self.shadow_color = (0, 0, 0)
         self.value = 0
+        self.prev_level = 0  # レベルアップ判定用に前フレームのレベルを保存
         # テキスト位置
         self.text_posision = (20, 20)
         # ゲージ位置とサイズ
@@ -348,6 +340,17 @@ class Score:
         prog_text = f"{progress}/10"
         prog_surface = self.font.render(prog_text, True, self.color)
         screen.blit(prog_surface, (gx + gw + 10, gy - 2))
+
+    def check_level_up(self) -> bool:
+        """
+        レベルが上がったかどうかをチェックする
+        戻り値: True なら新しくレベルが上がった
+        """
+        current_level = int(self.value / 10)
+        if current_level > self.prev_level:
+            self.prev_level = current_level
+            return True
+        return False
 
 
 class Starting:
@@ -424,6 +427,68 @@ class Starting:
                 tx = ox - tri_w - 12
                 ty = oy + (opt_surf.get_height() - tri_h) // 2
                 screen.blit(self.triangle, (tx, ty))
+
+
+class LevelUpSelector:
+    """
+    レベルアップ時に武器を選択する画面
+    Weapon_select クラスと連携して武器レベルを更新する
+    """
+    def __init__(self):
+        """
+        初期化処理
+        """
+        self.font = pg.font.Font("misaki_mincho.ttf", 36)
+        self.title_font = pg.font.Font("misaki_mincho.ttf", 50)
+        self.color = (255, 255, 255)
+        self.selected_color = (255, 255, 0)
+        
+        # 武器の選択肢
+        self.weapons = [
+            {"name": "ボム", "key": pg.K_1},
+            {"name": "レーザー", "key": pg.K_2},
+            {"name": "ミサイル", "key": pg.K_3},
+            {"name": "銃", "key": pg.K_4},
+            {"name": "剣", "key": pg.K_5},
+        ]
+        self.selected = 0
+
+    def update(self, screen: pg.Surface, bird: "Bird" = None):
+        """
+        選択画面の描画
+        引数: screen: Surfaceオブジェクト, bird: Birdインスタンス（武器レベルチェック用）
+        """
+        # 半透明の背景オーバーレイ
+        overlay = pg.Surface((width, height), pg.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        screen.blit(overlay, (0, 0))
+
+        # タイトル表示
+        title_text = "武器を選択してください"
+        title_surf = self.title_font.render(title_text, True, self.selected_color)
+        title_x = width // 2 - title_surf.get_width() // 2
+        title_y = height // 4
+        screen.blit(title_surf, (title_x, title_y))
+
+        # 武器選択肢の表示（レベル4に達した武器は表示しない）
+        start_y = height // 2
+        display_index = 0
+        for i, weapon in enumerate(self.weapons):
+            item = None
+            if bird is not None:
+                item = bird.get_item(i + 1)  # スロット番号は1から始まる
+                # 削除された武器、またはレベルが5以上の武器は表示しない
+                if item is None or item.get("level", 0) >= 5:
+                    continue
+
+            color = self.selected_color if i == self.selected else self.color
+            level_text = f"Lv{item['level']}" if item is not None else "Lv-"
+            weapon_text = f"[{i+1}] {weapon['name']} {level_text}"
+            weapon_surf = self.font.render(weapon_text, True, color)
+            weapon_x = width // 2 - weapon_surf.get_width() // 2
+            weapon_y = start_y + display_index * 60
+            screen.blit(weapon_surf, (weapon_x, weapon_y))
+            display_index += 1
 
 
 # class Ending:
@@ -909,6 +974,11 @@ class Weapon_Control:
             elif self.gun_level == 3: #レベル3の場合は三列
                 gun_wep.add(Gun_Weapon(bird, 15))
                 gun_wep.add(Gun_Weapon(bird, 0))
+                gun_wep.add(Gun_Weapon(bird, -15))    
+   
+            elif self.gun_level >= 4: #レベル4以降の仮置き
+                gun_wep.add(Gun_Weapon(bird, 15))
+                gun_wep.add(Gun_Weapon(bird, 0))
                 gun_wep.add(Gun_Weapon(bird, -15))
 
             self.gun_se.play()
@@ -934,6 +1004,12 @@ class Weapon_Control:
                 swrd_wep.add(Sword_Wepon(bird))
                 swrd_wep.add(Sword_Wepon(bird, math.pi))
             elif self.swrd_level == 3 and len(swrd_wep) < 3:
+                swrd_wep.empty()
+
+                swrd_wep.add(Sword_Wepon(bird))            
+                swrd_wep.add(Sword_Wepon(bird, math.pi * 2/3))
+                swrd_wep.add(Sword_Wepon(bird, math.pi * 4/3))
+            elif self.swrd_level >= 4 and len(swrd_wep) < 4:
                 swrd_wep.empty()
 
                 swrd_wep.add(Sword_Wepon(bird))            
@@ -1041,11 +1117,75 @@ class LastBoss(Enemy):
         if self.rect.top > height:
             self.rect.top = height  # とりあえず止める処理
 
+# 武器の選択に関する処理クラス
+class Weapon_select:
+    """
+    プレイヤーが武器を選択し、Bird のアイテムスロットシステムと連携する
+    """
+    def __init__(self, bird: "Bird", weap_ctrl: "Weapon_Control"):
+        """
+        初期化処理
+        引数: Bird インスタンス, Weapon_Control インスタンス
+        """
+        self.bird = bird
+        self.weap_ctrl = weap_ctrl
+        
+        # 武器情報の定義
+        self.weapons = [
+            {"slot": 1, "name": "ボム", "key": pg.K_1},
+            {"slot": 2, "name": "レーザー", "key": pg.K_2},
+            {"slot": 3, "name": "ミサイル", "key": pg.K_3},
+            {"slot": 4, "name": "銃", "key": pg.K_4},
+            {"slot": 5, "name": "剣", "key": pg.K_5},
+        ]
+    
+    def select_weapon(self, weapon_index: int) -> None:
+        """
+        武器を選択し、アイテムスロットとWeapon_Controlの双方を更新
+        引数: weapon_index (0-4: ボム、レーザー、ミサイル、銃、剣)
+        """
+
+        weapon_info = self.weapons[weapon_index]
+        slot = weapon_info["slot"]
+
+        # 現在のアイテムを取得
+        current_item = self.bird.get_item(slot)
+        if current_item is None:
+            return
+
+        # アイテムのレベルが4未満なら上げる（4到達で選択肢から外す）
+        cur_level = int(current_item.get("level", 1))
+        if cur_level < 4:
+            new_level = cur_level + 1
+            # Weapon_Control のレベルも同期
+            self._sync_weapon_control_level(weapon_index, new_level)
+
+            # Bird のアイテムスロットを更新（表示用に一時更新してから、
+            # レベル4到達なら選択肢から外すために clear_item を呼ぶ）
+            self.bird.set_item(slot, current_item.get("name", ""), current_item.get("attack", 0), new_level)
+
+            # レベルが4に到達したら、選択画面から外す（slotをクリア）
+            if new_level == 4:
+                self.bird.clear_item(slot)
+    
+    def _sync_weapon_control_level(self, weapon_index: int, new_level: int) -> None:
+        """
+        Bird のアイテムスロットレベルを Weapon_Control に同期する
+        """
+        if weapon_index == 0:
+            self.weap_ctrl.bomb_level = new_level
+        elif weapon_index == 1:
+            self.weap_ctrl.laser_level = new_level
+        elif weapon_index == 2:
+            self.weap_ctrl.mssl_level = new_level
+        elif weapon_index == 3:
+            self.weap_ctrl.gun_level = new_level
+        elif weapon_index == 4:
+            self.weap_ctrl.swrd_level = new_level
 
 def main():
     global width, height #画面幅、画面高さのグローバル変数を呼び出す
-    
-    pg.display.set_caption("真！こうかとん無双")
+
     screen = pg.display.set_mode((width, height), pg.FULLSCREEN)
     width, height = screen.get_size()
     
@@ -1059,12 +1199,15 @@ def main():
 
     score = Score()
     start_screen = Starting()
+    level_up_selector = LevelUpSelector()  # レベルアップ選択画面
     mode = "start"  # "start" or "play"
+    level_up_mode = None  # None: 通常, "selecting": 武器選択中
 
     bird = Bird(3, (900, 400))
     hpbar = Hpbar(bird)
     
     weap_ctrl = Weapon_Control()
+    weapon_selector = Weapon_select(bird, weap_ctrl)  # 武器選択システムを初期化
 
     bb_wep = pg.sprite.Group() #ボムの武器のグループ
     bb_effect = pg.sprite.Group() #ボム演出後の攻撃用エフェクトグループ
@@ -1083,6 +1226,13 @@ def main():
     ending = False #ラストフェーズかのフラグ
     boss_flag = False #ボスは既に出現したかのフラグ
 
+    #武器の設定
+    bird.set_item(1,"Bomb",1,1)
+    bird.set_item(2,"Laser",1,1)
+    bird.set_item(3,"Missile",1,1)
+    bird.set_item(4,"Gun",1,1)
+    bird.set_item(5,"Sword",1,1)
+
     while True:
         key_lst = pg.key.get_pressed()
         for event in pg.event.get():
@@ -1091,7 +1241,27 @@ def main():
             if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 return 0
 
-            # スタート画面用のイベント処理
+            # 武器選択画面用のイベント処理
+            if level_up_mode == "selecting":
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_1:
+                        weapon_selector.select_weapon(0)  # ボム
+                        level_up_mode = None
+                    elif event.key == pg.K_2:
+                        weapon_selector.select_weapon(1)  # レーザー
+                        level_up_mode = None
+                    elif event.key == pg.K_3:
+                        weapon_selector.select_weapon(2)  # ミサイル
+                        level_up_mode = None
+                    elif event.key == pg.K_4:
+                        weapon_selector.select_weapon(3)  # 銃
+                        level_up_mode = None
+                    elif event.key == pg.K_5:
+                        weapon_selector.select_weapon(4)  # 剣
+                        level_up_mode = None
+                continue
+
+            # スタート画面用のイベント処理　enterかspacekeyで決定
             if mode == "start":
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_UP:
@@ -1106,6 +1276,13 @@ def main():
                 continue
 
         screen.blit(bg_img, [0, 0])
+
+        # 武器選択画面を表示している場合はゲーム処理をスキップ
+        if level_up_mode == "selecting":
+            level_up_selector.update(screen, bird)  # birdパラメータを渡して武器レベルをチェック
+            pg.display.update()
+            clock.tick(50)
+            continue
 
         # スタート画面を表示している場合はゲーム処理をスキップ
         if mode == "start":
@@ -1240,6 +1417,11 @@ def main():
 
 
         score.update(screen)
+        
+        # レベルアップチェック
+        if score.check_level_up():
+            level_up_mode = "selecting"  # 武器選択画面に遷移
+        
         gravity.update()
         gravity.draw(screen)
         bird.update(key_lst, screen)
