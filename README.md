@@ -106,7 +106,9 @@
 ---
 
 ### ボム
+<p align="center">
 <img width="400" height="400" alt="Image" src="https://github.com/user-attachments/assets/93edba30-0b56-4e0f-a92a-04f5cebebabb" />
+<p>
 
 最初に主人公の中心にボムを配置する。一定時間後、`Explosion` クラスを使い爆破エフェクトを発生させる。  
 この爆発エフェクトに触れた敵はダメージを受ける。  
@@ -120,7 +122,9 @@
 * レベル5：さらに縦一列にも追撃の爆発エフェクトを大量発生させる
 
 ### レーザー
+<p align="center">
 <img width="400" height="400" alt="Image" src="https://github.com/user-attachments/assets/9464dd4d-f6b4-4b50-83b3-e6556ffc82af" />
+<p>
 
 主人公の角度に合わせてレーザーが射出される。直線上に移動し、敵と衝突してダメージを与えたあとも消失せず、敵を貫通する。  
 一度の射出イベントで射出上限量に達した後、しばらくクールタイムが発生する。
@@ -132,7 +136,9 @@
 * レベル5：主人公の上・下の2方向にレーザーを追加
 
 ### ミサイル
+<p align="center">
 <img width="450" height="450" alt="Image" src="https://github.com/user-attachments/assets/5a9ba971-34c3-48cb-b9b9-e9bb4d60216f" />
+<p>
 
 ランダム敵をロックオンして射出され、そのターゲットを当たるまで追尾する。途中で他の武器や主人公と衝突したなどでターゲットが消失した場合、ランダムな敵を再抽選し、次のターゲットにする。
 発射後はしばらくクールタイムが発生する。
@@ -141,7 +147,9 @@
 * レベルが上がるたびに発射ミサイルの数を増加させる
 
 ### マシンガン
+<p align="center">
 <img width="400" height="400" alt="Image" src="https://github.com/user-attachments/assets/3d221886-384b-48fd-8e79-f9e40d9507ec" />
+<p>
 
 主人公の向いている方向の直線状に移動し、敵と衝突した後、ダメージを与えて消失する。  
 連続的に弾丸を撃つことができる。
@@ -150,7 +158,9 @@
 * レベルが上がるたびに発射される銃弾の列が増える
 
 ### 剣
+<p align="center">
 <img width="400" height="400" alt="Image" src="https://github.com/user-attachments/assets/b34e68cd-aa47-4905-a598-4d808a81a8df" />
+<p>
 
 主人公のまわりを周回し、衝突時に敵にダメージを与える。  
 一定時間顕現し、しばらくのクールタイムが発生したあとに再出現する。
@@ -164,19 +174,29 @@
 ## 敵の実装（5種 + シークレット）
 
 ### レポート
+<p align="center">
 <img width="350" height="400" alt="Image" src="https://github.com/user-attachments/assets/9c76ff9e-fbdc-4381-b70f-f5daa339eeec" />
+<p>
 
 ### 期限
+<p align="center">
 <img width="375" height="400" alt="Image" src="https://github.com/user-attachments/assets/9eff35c3-96d8-466d-8a41-c1b7c006498c" />
+<p>
 
 ### 生成AI
+<p align="center">
 <img width="300" height="300" alt="Image" src="https://github.com/user-attachments/assets/93b147c3-a785-4a62-9725-2a9b24ff2f4d" />
+<p>
 
 ### 警備員
+<p align="center">
 <img width="350" height="400" alt="Image" src="https://github.com/user-attachments/assets/c862521f-ac6a-4a4c-a973-ead72b8a3064" />
+<p>
 
 ### 教師
+<p align="center">
 <img width="314" height="450" alt="Image" src="https://github.com/user-attachments/assets/c7172002-9391-4e49-8833-983c401a353e" />
+<p>
 
 ### シークレット
 すべてが謎に包まれている禁忌の存在。
