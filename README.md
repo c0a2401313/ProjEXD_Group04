@@ -38,7 +38,7 @@
 ## ゲームの実装
 
 ## ゲーム機能チャート構想
-<img width="2626" height="2051" alt="チャート" src="https://github.com/user-attachments/assets/79fcae86-7426-4461-9fca-322a08f6dfed" />
+<img width="2626" height="2051" alt="チャート (1)" src="https://github.com/user-attachments/assets/869180fd-67a0-4408-ac07-add8645564a6" />
 
 
 
@@ -244,4 +244,5 @@
 pip install pygame
 
 python 目指せ!卒業.py
+
 
