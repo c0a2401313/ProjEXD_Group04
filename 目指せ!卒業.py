@@ -76,7 +76,6 @@ class Bird(pg.sprite.Sprite):
 
         # 互換用：既存コードの item1〜item5 を残す（中身は _items と同期）
         self.dmg_eff_time = 0 #ダメージエフェクトのフレーム管理用
-        self.hp = 10
         
         self.item1 = None #武器ランダム
         self.item2 = None
