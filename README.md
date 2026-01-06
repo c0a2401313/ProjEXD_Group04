@@ -38,7 +38,9 @@
 ## ゲームの実装
 
 ## ゲーム機能チャート構想
-![Image](https://github.com/user-attachments/assets/298c986d-7624-4731-b5c6-da07fec713ba)
+<img width="2626" height="2051" alt="チャート (1)" src="https://github.com/user-attachments/assets/869180fd-67a0-4408-ac07-add8645564a6" />
+
+
 
 ### 共通基本機能
 * 背景画像と主人公キャラクターの描画
@@ -240,4 +242,7 @@
 
 ```bash
 pip install pygame
+
 python 目指せ!卒業.py
+
+
