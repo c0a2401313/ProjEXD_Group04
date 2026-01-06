@@ -599,8 +599,8 @@ class Laser_Weapon(pg.sprite.Sprite):
         self.rect.centerx = bird.rect.centerx + bird.rect.width * self.vx
 
         #ステータス設定
-        self.atk = 1 #攻撃力
-        self.speed = 20 #レーザーの速さ
+        self.atk = 5 * level #攻撃力
+        self.speed = 20 - level #レーザーの速さ
 
     def update(self):
         """
@@ -1317,7 +1317,7 @@ def main():
             # 武器選択画面用のイベント処理
             if level_up_mode == "selecting":
                 if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_1:
+                    if event.key == pg.K_1 and weap_ctrl.bomb_level < 5:
                         weapon_selector.select_weapon(0)  # ボム
                         level_up_mode = None
                     elif event.key == pg.K_2:
