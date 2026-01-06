@@ -1141,6 +1141,8 @@ class Enemy(pg.sprite.Sprite):
 
         self.pos = pg.Vector2(self.rect.center)
         self.speed = self.stats[1]
+        
+        self.dmg_eff_time = 0
 
     def update(self, bird_pos):
         target_vector = pg.math.Vector2(bird_pos)
@@ -1319,16 +1321,16 @@ def main():
                     if event.key == pg.K_1 and weap_ctrl.bomb_level < 5:
                         weapon_selector.select_weapon(0)  # ボム
                         level_up_mode = None
-                    elif event.key == pg.K_2:
+                    elif event.key == pg.K_2 and weap_ctrl.laser_level < 5:
                         weapon_selector.select_weapon(1)  # レーザー
                         level_up_mode = None
-                    elif event.key == pg.K_3:
-                        weapon_selector.select_weapon(2)  # ミサイル
+                    elif event.key == pg.K_3 and weap_ctrl.mssl_level < 5:
+                        weapon_selector.select_weapon(2) # ミサイル
                         level_up_mode = None
-                    elif event.key == pg.K_4:
-                        weapon_selector.select_weapon(3)  # 銃
+                    elif event.key == pg.K_4 and weap_ctrl.gun_level < 5:
+                        weapon_selector.select_weapon(3) # 銃
                         level_up_mode = None
-                    elif event.key == pg.K_5:
+                    elif event.key == pg.K_5 and weap_ctrl.swrd_level < 5:
                         weapon_selector.select_weapon(4)  # 剣
                         level_up_mode = None
                 continue
